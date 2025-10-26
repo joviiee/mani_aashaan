@@ -1,5 +1,5 @@
 name: mani_aashaan
-description: "A new Flutter project."
+description: Minimal expense tracker foundation with Isar + Riverpod
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: ">=2.18.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,6 +34,12 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  flutter_riverpod: ^2.6.1
+  intl: ^0.20.2
+  path_provider: ^2.1.1
+  equatable: ^2.0.7
 
 dev_dependencies:
   flutter_test:
@@ -44,6 +50,8 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+  build_runner: ^2.4.11
+  isar_generator: ^3.1.0+1
   flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
