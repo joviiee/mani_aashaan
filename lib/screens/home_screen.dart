@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../viewmodels/expense_viewmodel.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
+import '../main.dart';
 import 'add_expense_screen.dart';
 import 'categories_screen.dart';
 
@@ -53,31 +54,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final categoriesAsync = ref.watch(categoriesProvider);
     final expensesAsync = ref.watch(expensesProvider(_filterParams));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         flexibleSpace: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF00796B), Color(0xFF26A69A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            gradient: AppGradients.primary,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
             ),
           ),
         ),
-        title: const Text(
-          'My Expenses',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: 0.5,
+        title: Text('My Expenses', style: theme.appBarTheme.titleTextStyle),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
         ),
-        elevation: 0,
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16.0),
@@ -86,16 +85,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: const Icon(
-                Icons.category_rounded,
-                color: Colors.white,
-                size: 26,
-              ),
+              icon: const Icon(Icons.category_rounded),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CategoriesScreen()),
               ).then((_) {
-                // Refresh categories and expenses after returning
                 ref.invalidate(categoriesProvider);
                 ref.invalidate(expensesProvider(_filterParams));
               }),
@@ -105,15 +99,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 100),
+          const SizedBox(height: 110),
           _buildFilterSection(context, categoriesAsync),
           const SizedBox(height: 8),
           Expanded(
             child: expensesAsync.when(
               data: (list) => _buildList(list),
-              loading: () => const Center(
+              loading: () => Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFF00796B),
+                  color: theme.progressIndicatorTheme.color,
                 ),
               ),
               error: (e, s) => Center(
@@ -137,23 +131,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }),
         icon: const Icon(Icons.add),
         label: const Text('Add Expense'),
-        elevation: 8,
       ),
     );
   }
 
   Widget _buildFilterSection(
       BuildContext context, AsyncValue<List<Category>> categoriesAsync) {
+    final theme = Theme.of(context);
     final dateFmt = DateFormat('MMM d, yyyy');
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.white, Color(0xFFFAFAFA)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppGradients.cardBackground,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -171,24 +161,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00796B).withValues(alpha: .1),
+                  color: AppColors.violetPrimary.withValues(alpha: .1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.filter_list_rounded,
-                  color: Color(0xFF00796B),
+                  color: theme.iconTheme.color,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Filter Expenses',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Color(0xFF00796B),
-                ),
-              ),
+              Text('Filter Expenses', style: theme.textTheme.titleMedium),
             ],
           ),
           const SizedBox(height: 16),
@@ -197,31 +180,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF00796B).withValues(alpha: .05),
+                color: AppColors.violetPrimary.withValues(alpha: .05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF00796B).withValues(alpha: .3)),
+                border: Border.all(color: AppColors.violetPrimary.withValues(alpha: .3)),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_rounded,
-                    color: Color(0xFF00796B),
+                    color: theme.iconTheme.color,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       '${dateFmt.format(_start!)} → ${dateFmt.format(_end!)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF00796B),
+                        color: theme.iconTheme.color,
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down_rounded,
-                    color: Color(0xFF00796B),
+                    color: theme.iconTheme.color,
                   ),
                 ],
               ),
@@ -230,7 +213,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(height: 12),
           categoriesAsync.when(
             data: (cats) {
-              // Prepend a null option for "All"
               final allOptions = [null, ...cats];
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -241,11 +223,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 child: DropdownButtonFormField<Category>(
                   value: _selectedCategory,
-                  hint: const Row(
+                  hint: Row(
                     children: [
-                      Icon(Icons.category_outlined, size: 20, color: Colors.grey),
-                      SizedBox(width: 8),
-                      Text(
+                      Icon(Icons.category_outlined, size: 20, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      const Text(
                         'All categories',
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
@@ -263,7 +245,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Icon(
                                   cat == null ? Icons.apps_rounded : Icons.label_rounded,
                                   size: 18,
-                                  color: const Color(0xFF00796B),
+                                  color: theme.iconTheme.color,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(cat?.name ?? 'All'),
@@ -296,6 +278,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildList(List<Expense> list){
+    final theme = Theme.of(context);
+    
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -357,15 +341,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             leading: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00796B), Color(0xFF26A69A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppGradients.accent,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00796B).withValues(alpha: .3),
+                    color: AppColors.yellowAccent.withValues(alpha: .3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -379,10 +359,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             title: Text(
               e.title,
-              style: const TextStyle(
+              style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xFF2C2C2C),
               ),
             ),
             subtitle: Padding(
@@ -408,15 +386,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF00796B).withOpacity(0.1),
+                color: AppColors.violetPrimary.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '₹${e.amount.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF00796B),
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ),
