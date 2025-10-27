@@ -20,17 +20,16 @@ class ExpenseApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00796B),
-          primary: const Color(0xFF00796B),
-          secondary: const Color(0xFF26A69A),
+          seedColor: const Color.fromARGB(255, 18, 2, 255),
+          primary: const Color.fromARGB(255, 26, 1, 255),
+          secondary: const Color.fromARGB(255, 76, 0, 255),
           surface: const Color(0xFFF5F5F5),
-          background: const Color(0xFFFAFAFA),
         ),
-        cardTheme: CardTheme(
+        cardTheme:const CardThemeData(
           elevation: 2,
           shadowColor: Colors.black26,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -69,7 +68,7 @@ class ExpenseApp extends StatelessWidget {
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           elevation: 6,
-          backgroundColor: Color(0xFF00796B),
+          backgroundColor: Color.fromARGB(255, 3, 41, 255),
           foregroundColor: Colors.white,
         ),
         fontFamily: 'Roboto',
