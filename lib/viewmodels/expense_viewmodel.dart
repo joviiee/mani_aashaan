@@ -23,6 +23,22 @@ final expensesProvider =
   );
 });
 
+final todayTotalProvider = FutureProvider<double>((ref) async {
+  final repo = ref.watch(expenseRepoProvider);
+  return repo.getTodayTotal();
+});
+
+final weekTotalProvider = FutureProvider<double>((ref) async {
+  final repo = ref.watch(expenseRepoProvider);
+  return repo.getWeekTotal();
+});
+
+final monthTotalProvider = FutureProvider<double>((ref) async {
+  final repo = ref.watch(expenseRepoProvider);
+  return repo.getMonthTotal();
+});
+
+
 class FilterParams extends Equatable {
   final DateTime start;
   final DateTime end;

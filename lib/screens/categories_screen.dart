@@ -119,7 +119,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                 children: [
                                   Icon(Icons.shopping_cart_rounded, size: 18, color: theme.iconTheme.color),
                                   const SizedBox(width: 8),
-                                  const Text('Consumption'),
+                                  const Text('Consumption',style: TextStyle(fontSize: 14),),
                                 ],
                               ),
                             ),
@@ -129,7 +129,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                 children: [
                                   Icon(Icons.trending_up_rounded, size: 18, color: theme.iconTheme.color),
                                   const SizedBox(width: 8),
-                                  const Text('Investment'),
+                                  const Text('Investment',style: TextStyle(fontSize: 14)),
                                 ],
                               ),
                             ),

@@ -48,11 +48,8 @@ class ExpenseRepository {
     start ??= DateTime(now.year, now.month, now.day);
     end ??= now;
 
-    final q = isar.expenses
-        .filter()
-        .timestampBetween(start, end)
-        .optional(category != null,
-            (q) => q.category((c) => c.idEqualTo(category!)));
+    final q = isar.expenses.filter().timestampBetween(start, end).optional(
+        category != null, (q) => q.category((c) => c.idEqualTo(category!)));
 
     final result = await q.findAll();
     print(
@@ -66,11 +63,41 @@ class ExpenseRepository {
       await isar.expenses.delete(id);
     });
   }
+
+  Future<double> getTotalSpentBetween(DateTime start, DateTime end) async {
+    final isar = await _db();
+    final expenses =
+        await isar.expenses.filter().timestampBetween(start, end).findAll();
+    await Future.wait(expenses.map((e) => e.category.load()));
+    return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+  }
+
+  Future<double> getTodayTotal() async {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+    return await getTotalSpentBetween(start, end);
+  }
+
+  Future<double> getWeekTotal() async {
+    final now = DateTime.now();
+    final start = now.subtract(Duration(days: now.weekday - 1)); // Monday
+    final end = start.add(const Duration(days: 7));
+    return await getTotalSpentBetween(start, end);
+  }
+
+  Future<double> getMonthTotal() async {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month + 1, 1);
+    return await getTotalSpentBetween(start, end);
+  }
 }
 
 extension<T> on FilterQuery<T> {
   /// Adds conditionally chained filters more elegantly
-  FilterQuery<T> optional(bool condition, FilterQuery<T> Function(FilterQuery<T>) apply) {
+  FilterQuery<T> optional(
+      bool condition, FilterQuery<T> Function(FilterQuery<T>) apply) {
     return condition ? apply(this) : this;
   }
 }

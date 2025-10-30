@@ -77,7 +77,7 @@ class ExpenseApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 2,
           shadowColor: Colors.black26,
           shape: RoundedRectangleBorder(

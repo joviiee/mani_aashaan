@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:mani_aashaan/screens/analytics_screen.dart';
 import '../viewmodels/expense_viewmodel.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
@@ -120,17 +121,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
-        ).then((shouldRefresh) {
-          if (shouldRefresh == true) {
-            _updateFilterParams();
-          }
-        }),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Expense'),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: "analytics",
+            backgroundColor: AppColors.violetPrimary.withValues(alpha: .9),
+            icon: const Icon(Icons.analytics_rounded),
+            label: const Text('Analytics'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            ).then((shouldRefresh) {
+              if (shouldRefresh == true) {
+                _updateFilterParams();
+              }
+            }),
+          ),
+          const SizedBox(width: 12),
+          FloatingActionButton.extended(
+            heroTag: "addExpense",
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+            ).then((shouldRefresh) {
+              if (shouldRefresh == true) {
+                _updateFilterParams();
+              }
+            }),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Expense'),
+          ),
+        ],
       ),
     );
   }
@@ -182,7 +204,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               decoration: BoxDecoration(
                 color: AppColors.violetPrimary.withValues(alpha: .05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.violetPrimary.withValues(alpha: .3)),
+                border: Border.all(
+                    color: AppColors.violetPrimary.withValues(alpha: .3)),
               ),
               child: Row(
                 children: [
@@ -225,7 +248,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   value: _selectedCategory,
                   hint: Row(
                     children: [
-                      Icon(Icons.category_outlined, size: 20, color: Colors.grey.shade600),
+                      Icon(Icons.category_outlined,
+                          size: 20, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       const Text(
                         'All categories',
@@ -235,7 +259,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: allOptions
                       .map((cat) => DropdownMenuItem<Category>(
@@ -243,7 +268,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Row(
                               children: [
                                 Icon(
-                                  cat == null ? Icons.apps_rounded : Icons.label_rounded,
+                                  cat == null
+                                      ? Icons.apps_rounded
+                                      : Icons.label_rounded,
                                   size: 18,
                                   color: theme.iconTheme.color,
                                 ),
@@ -277,9 +304,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildList(List<Expense> list){
+  Widget _buildList(List<Expense> list) {
     final theme = Theme.of(context);
-    
+
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -313,7 +340,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
       itemCount: list.length,
       itemBuilder: (context, i) {
         final e = list[i];
@@ -337,9 +364,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             leading: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 gradient: AppGradients.accent,
                 borderRadius: BorderRadius.circular(12),
@@ -372,7 +400,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     size: 14,
                     color: Colors.grey.shade600,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   Text(
                     dt,
                     style: TextStyle(
@@ -390,7 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '₹${e.amount.toStringAsFixed(2)}',
+                '₹${e.amount.toStringAsFixed(0)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
