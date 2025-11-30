@@ -10,11 +10,15 @@ class Expense {
   late double amount;
   late String title;
 
-  /// link to Category object
+  /// Link to Category
   final category = IsarLink<Category>();
 
   late DateTime timestamp;
   String? notes;
+
+  /// Stores extra data for dynamic category fields
+  /// Each field corresponds to one of category.extraParams
+  late List<ExpenseExtraValue> extraValues;
 
   Expense();
 
@@ -24,7 +28,22 @@ class Expense {
     required Category category,
     DateTime? timestamp,
     this.notes,
+    this.extraValues = const [],
   }) : timestamp = timestamp ?? DateTime.now() {
     this.category.value = category;
   }
+}
+
+/// Represents one extra field value stored in an Expense
+@embedded
+class ExpenseExtraValue {
+  String fieldName = '';
+  String type = '';  // "string", "number", "date", etc.
+  String? value;
+
+  ExpenseExtraValue({
+    this.fieldName = '',
+    this.type = '',
+    this.value,
+  });
 }

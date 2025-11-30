@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:mani_aashaan/screens/analytics_screen.dart';
 import '../viewmodels/expense_viewmodel.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import '../main.dart';
 import 'add_expense_screen.dart';
 import 'categories_screen.dart';
+import 'analytics_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -17,8 +17,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  DateTime? _start;
-  DateTime? _end;
+  final ScrollController _dateScrollController = ScrollController();
+
+  DateTime _selectedDate = DateTime.now();
   Category? _selectedCategory;
 
   late FilterParams _filterParams;
@@ -26,31 +27,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _start = DateTime(now.year, now.month, now.day);
-    _end = now;
+    _filterParams = _getFilterParams();
 
-    _filterParams = FilterParams(
-      start: _start!,
-      end: _end!,
+    // Scroll to the latest date (rightmost)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_dateScrollController.hasClients) {
+        _dateScrollController.jumpTo(
+          _dateScrollController.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _dateScrollController.dispose();
+    super.dispose();
+  }
+
+  FilterParams _getFilterParams() {
+    final start =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final end = start.add(const Duration(days: 1));
+    return FilterParams(
+      start: start,
+      end: end,
       categoryId: _selectedCategory?.id,
     );
   }
 
-  void _updateFilterParams({String source = "creation"}) {
+  void _updateFilter() {
     setState(() {
-      if (source == "creation") {
-        final now = DateTime.now();
-        _end = now;
-      }
-      _filterParams = FilterParams(
-        start: _start!,
-        end: _end!,
-        categoryId: _selectedCategory?.id,
-      );
+      _filterParams = _getFilterParams();
     });
-    ref.invalidate(categoriesProvider);
     ref.invalidate(expensesProvider(_filterParams));
+  }
+
+  List<DateTime> getLast7Days() {
+    final now = DateTime.now();
+    return List.generate(7, (i) => now.subtract(Duration(days: i)))
+        .reversed
+        .toList();
   }
 
   @override
@@ -92,7 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const CategoriesScreen()),
               ).then((_) {
                 ref.invalidate(categoriesProvider);
-                ref.invalidate(expensesProvider(_filterParams));
+                _updateFilter();
               }),
             ),
           ),
@@ -100,9 +117,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 110),
-          _buildFilterSection(context, categoriesAsync),
-          const SizedBox(height: 8),
+          const SizedBox(height: 100),
+          _buildDateSelector(context),
+          const SizedBox(height: 4),
+          _buildFilterRow(context),
+          const SizedBox(height: 4),
           Expanded(
             child: expensesAsync.when(
               data: (list) => _buildList(list),
@@ -112,10 +131,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               error: (e, s) => Center(
-                child: Text(
-                  'Error: $e',
-                  style: const TextStyle(color: Colors.red),
-                ),
+                child: Text('Error: $e',
+                    style: const TextStyle(color: Colors.red)),
               ),
             ),
           ),
@@ -133,9 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
             ).then((shouldRefresh) {
-              if (shouldRefresh == true) {
-                _updateFilterParams();
-              }
+              if (shouldRefresh == true) _updateFilter();
             }),
           ),
           const SizedBox(width: 12),
@@ -145,9 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
             ).then((shouldRefresh) {
-              if (shouldRefresh == true) {
-                _updateFilterParams();
-              }
+              if (shouldRefresh == true) _updateFilter();
             }),
             icon: const Icon(Icons.add),
             label: const Text('Add Expense'),
@@ -157,147 +170,149 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildFilterSection(
-      BuildContext context, AsyncValue<List<Category>> categoriesAsync) {
+  // 🟣 Horizontal Date Selector (Daily View)
+  Widget _buildDateSelector(BuildContext context) {
+    final days = getLast7Days();
     final theme = Theme.of(context);
-    final dateFmt = DateFormat('MMM d, yyyy');
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppGradients.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.violetPrimary.withValues(alpha: .1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.filter_list_rounded,
-                  color: theme.iconTheme.color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text('Filter Expenses', style: theme.textTheme.titleMedium),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _pickRange,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        controller: _dateScrollController, // ✅ attach controller
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: days.length,
+        itemBuilder: (context, index) {
+          final date = days[index];
+          final isSelected = DateUtils.isSameDay(date, _selectedDate);
+          final dayName = DateFormat('E').format(date);
+          final dayNum = DateFormat('d').format(date);
+
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedDate = date);
+              _updateFilter();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               decoration: BoxDecoration(
-                color: AppColors.violetPrimary.withValues(alpha: .05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: AppColors.violetPrimary.withValues(alpha: .3)),
+                gradient: isSelected ? AppGradients.primary : null,
+                color: isSelected ? null : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : [],
               ),
-              child: Row(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    color: theme.iconTheme.color,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '${dateFmt.format(_start!)} → ${dateFmt.format(_end!)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: theme.iconTheme.color,
-                      ),
+                  Text(
+                    dayName,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_drop_down_rounded,
-                    color: theme.iconTheme.color,
+                  const SizedBox(height: 4),
+                  Text(
+                    dayNum,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  // 🟣 Category Filter Dropdown
+  // 🟣 Compact Filter Row (Category + Total)
+  Widget _buildFilterRow(BuildContext context) {
+    final theme = Theme.of(context);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final expensesAsync = ref.watch(expensesProvider(_filterParams));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 🟢 Total Spend Text
+          expensesAsync.when(
+            data: (list) {
+              final total = list.fold<double>(0, (sum, e) => sum + e.amount);
+              return Text(
+                'Total: ₹${total.toStringAsFixed(0)}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.violetPrimary,
+                ),
+              );
+            },
+            loading: () =>
+                const Text('Total: ₹...', style: TextStyle(fontSize: 14)),
+            error: (_, __) =>
+                const Text('Error', style: TextStyle(color: Colors.red)),
           ),
-          const SizedBox(height: 12),
+
+          // 🟣 Category Dropdown - minimal style
           categoriesAsync.when(
             data: (cats) {
               final allOptions = [null, ...cats];
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: DropdownButtonFormField<Category>(
+              return DropdownButtonHideUnderline(
+                child: DropdownButton<Category>(
                   value: _selectedCategory,
-                  hint: Row(
-                    children: [
-                      Icon(Icons.category_outlined,
-                          size: 20, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'All categories',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  dropdownColor: Colors.white,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey, size: 20),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade800,
+                    fontSize: 13,
                   ),
                   items: allOptions
                       .map((cat) => DropdownMenuItem<Category>(
                             value: cat,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  cat == null
-                                      ? Icons.apps_rounded
-                                      : Icons.label_rounded,
-                                  size: 18,
-                                  color: theme.iconTheme.color,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(cat?.name ?? 'All'),
-                              ],
+                            child: Text(
+                              cat?.name ?? 'All',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: cat == _selectedCategory
+                                    ? AppColors.violetPrimary
+                                    : Colors.grey.shade700,
+                                fontWeight: cat == _selectedCategory
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                              ),
                             ),
                           ))
                       .toList(),
                   onChanged: (val) {
                     setState(() => _selectedCategory = val);
-                    _updateFilterParams();
-                    ref.invalidate(expensesProvider(_filterParams));
+                    _updateFilter();
                   },
                 ),
               );
             },
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (e, s) => const Text(
-              'Error loading categories',
-              style: TextStyle(color: Colors.red, fontSize: 12),
-            ),
+            loading: () => const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (_, __) => const SizedBox(),
           ),
         ],
       ),
@@ -312,28 +327,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
+            Icon(Icons.receipt_long_outlined,
+                size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text(
-              'No expenses recorded',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the + button to add your first expense',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
-            ),
+            Text('No expenses for this day',
+                style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500)),
           ],
         ),
       );
@@ -344,8 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       itemCount: list.length,
       itemBuilder: (context, i) {
         final e = list[i];
-        final dt = DateFormat.yMMMd().add_jm().format(e.timestamp);
-
+        final dt = DateFormat.jm().format(e.timestamp);
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
@@ -379,38 +379,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.account_balance_wallet_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: const Icon(Icons.account_balance_wallet_rounded,
+                  color: Colors.white, size: 24),
             ),
             title: Text(
               e.title,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    size: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    dt,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            subtitle: Text(dt,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
@@ -420,39 +398,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Text(
                 '₹${e.amount.toStringAsFixed(0)}',
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: theme.colorScheme.primary,
-                ),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: theme.colorScheme.primary),
               ),
             ),
           ),
         );
       },
     );
-  }
-
-  Future<void> _pickRange() async {
-    final range = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2022),
-      lastDate: DateTime.now(),
-      initialDateRange: DateTimeRange(start: _start!, end: _end!),
-    );
-
-    if (range != null) {
-      final now = DateTime.now();
-
-      _start = DateTime(range.start.year, range.start.month, range.start.day);
-
-      _end = (range.end.year == now.year &&
-              range.end.month == now.month &&
-              range.end.day == now.day)
-          ? now
-          : DateTime(
-              range.end.year, range.end.month, range.end.day, 23, 59, 59, 999);
-
-      _updateFilterParams(source: "filter");
-    }
   }
 }

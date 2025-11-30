@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/expense_viewmodel.dart';
+import '../main.dart'; // For AppGradients and AppColors
 import 'analytics_detail_screen.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
@@ -12,50 +13,90 @@ class AnalyticsScreen extends ConsumerWidget {
     final weekAsync = ref.watch(weekTotalProvider);
     final monthAsync = ref.watch(monthTotalProvider);
 
+    final theme = Theme.of(context);
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Analytics'),
+        title: const Text('Analytics Overview'),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppGradients.primary,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _buildAnalyticsCard(
-              context,
-              'Today\'s Spend',
-              todayAsync,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AnalyticsDetailScreen(period: 'daily'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Spending Summary",
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.violetPrimary,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildAnalyticsCard(
-              context,
-              'This Week\'s Spend',
-              weekAsync,
-              () => Navigator.push(
+              const SizedBox(height: 20),
+
+              _buildAnalyticsCard(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const AnalyticsDetailScreen(period: 'weekly'),
+                'Today\'s Spend',
+                todayAsync,
+                AppGradients.cardBackground,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const AnalyticsDetailScreen(period: 'daily'),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildAnalyticsCard(
-              context,
-              'This Month\'s Spend',
-              monthAsync,
-              () => Navigator.push(
+              const SizedBox(height: 16),
+
+              _buildAnalyticsCard(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const AnalyticsDetailScreen(period: 'monthly'),
+                'This Week\'s Spend',
+                weekAsync,
+                AppGradients.cardBackground,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const AnalyticsDetailScreen(period: 'weekly'),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              _buildAnalyticsCard(
+                context,
+                'This Month\'s Spend',
+                monthAsync,
+                AppGradients.cardBackground,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const AnalyticsDetailScreen(period: 'monthly'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -65,6 +106,7 @@ class AnalyticsScreen extends ConsumerWidget {
     BuildContext context,
     String title,
     AsyncValue<double> asyncValue,
+    Gradient gradient,
     VoidCallback onTap,
   ) {
     final theme = Theme.of(context);
@@ -75,18 +117,14 @@ class AnalyticsScreen extends ConsumerWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.deepPurple.shade100, Colors.deepPurple.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: gradient,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
+                  blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
               ],
@@ -94,12 +132,33 @@ class AnalyticsScreen extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: theme.textTheme.titleMedium),
-                Text(
-                  '₹${value.toStringAsFixed(2)}',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: AppColors.violetPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '₹${value.toStringAsFixed(2)}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],

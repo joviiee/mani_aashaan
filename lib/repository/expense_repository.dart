@@ -19,10 +19,39 @@ class ExpenseRepository {
     return await isar.categorys.where().findAll();
   }
 
+  /// ✅ Get Category by ID
+  Future<Category?> getCategoryById(Id id) async {
+    final isar = await _db();
+    return await isar.categorys.get(id);
+  }
+
   Future<void> deleteCategory(Id id) async {
     final isar = await _db();
     await isar.writeTxn(() async {
       await isar.categorys.delete(id);
+    });
+  }
+
+  /// ✅ Update existing Category
+  Future<void> updateCategory(Category updatedCategory) async {
+    final isar = await _db();
+    await isar.writeTxn(() async {
+      // Fetch the existing category
+      final existing = await isar.categorys.get(updatedCategory.id ?? -1);
+      if (existing == null) {
+        throw Exception('Category with ID ${updatedCategory.id} not found');
+      }
+
+      // Update fields (only overwrite if provided)
+      existing.name = updatedCategory.name;
+      existing.colorHex = updatedCategory.colorHex;
+      existing.icon = updatedCategory.icon;
+      existing.isClosable = updatedCategory.isClosable;
+      existing.isRecurring = updatedCategory.isRecurring;
+      existing.extraParams = updatedCategory.extraParams;
+
+      // Save changes
+      await isar.categorys.put(existing);
     });
   }
 
@@ -43,17 +72,17 @@ class ExpenseRepository {
   }) async {
     final isar = await _db();
 
-    // ✅ Default range: start of today → now
     final now = DateTime.now();
     start ??= DateTime(now.year, now.month, now.day);
     end ??= now;
 
-    final q = isar.expenses.filter().timestampBetween(start, end).optional(
-        category != null, (q) => q.category((c) => c.idEqualTo(category!)));
+    final q = isar.expenses
+        .filter()
+        .timestampBetween(start, end)
+        .optional(category != null, (q) => q.category((c) => c.idEqualTo(category!)));
 
     final result = await q.findAll();
-    print(
-        'Fetched ${result.length} expenses between $start and $end (category: $category)');
+    print('Fetched ${result.length} expenses between $start and $end (category: $category)');
     return result;
   }
 
@@ -90,12 +119,12 @@ class ExpenseRepository {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, 1);
     final end = DateTime(now.year, now.month + 1, 1);
+    print('Calculating month total from $start to $end');
     return await getTotalSpentBetween(start, end);
   }
 }
 
 extension<T> on FilterQuery<T> {
-  /// Adds conditionally chained filters more elegantly
   FilterQuery<T> optional(
       bool condition, FilterQuery<T> Function(FilterQuery<T>) apply) {
     return condition ? apply(this) : this;
